@@ -1,0 +1,102 @@
+---------JUSTIFICATIONS------------- from 
+
+
+** Cleaning Step **
+Removing Headers and Extraneous Information: Cleaning the data by removing headers and
+extraneous information is crucial for the transformation task because these parts of the
+text do not contain phonetic information relevant to the pronunciation transformation. 
+Keeping them would introduce noise into the transformation process.
+
+Handling '*' Lines: handling lines starting with '*' up to ':' is necessary because 
+these lines typically contain annotations, speaker names, or other non-phonetic 
+information. Such lines/parts of lines are irrelevant to the transformation task, and 
+their removal helps simplify the data.
+
+Removing Content Between "NAK" Markers: Content between "NAK" markers, including "NAK" 
+itself, is removed because it does not provide phonetic information. It is specific to
+the original data format and is not relevant to the transformation.
+
+Removing Lines with Only '0' in Conversation: Lines with only '0' in conversation are 
+removed because they do not contain phonetic content and are unlikely to contribute to
+the transformation task. This step helps in cleaning out irrelevant data.
+
+Removing Special Characters: Removing special characters that are not part of the
+ArpaBET phoneme set ensures that the text is prepared for accurate phonetic
+transformation. It prevents interference from characters that do not have 
+a phonetic counterpart in the CMU Pronunciation Dictionary.
+
+Removing Numbers: Removing numbers from the text is justified because the 
+transformation task focuses on mapping words to their phonetic representations. 
+Numbers are not part of the ArpaBET phoneme set and are typically not relevant 
+for pronunciation transformation.
+
+Contractions: Contractions such as can't were not modified to their full forms (ex: cannot)
+because such an action would alter the underlying pronunciation of the word and therefore would
+not be suitable for the downstream task.
+
+** Transformation Step **
+Not in dictionary - While searching in the dictionary, if the word is not found in the 
+    dict then it will not have a phonetic sound associated with it, therefore the word will 
+    be removed from the transformed data
+
+Multiple pronunciation - For words that map to multiple pronunciations, the first
+    phonetic translation of the word is used since it is the most popular pronunciation.
+    This implementation is also computationally tractable.
+
+Lexical stress markers -  lexical stress markers (such as AA1) were left in the final 
+    output because they are important for understanding the pronunciation of the word
+
+
+
+** Addressing Feedback from Assignment 1 **
+
+Feedback:
+More cleaning is required. The @ symbol is used for some tagging within the corpus
+(i.e., @ followed be a letter, appended to a word to indicate something about it;
+you can read more about this and other formatting in the CHAT Transcription Manual
+linked from https://childes.talkbank.org/), so your rule to clean out anything
+between an @ and a \n removes too much content. 
+
+Our fix:
+The rule to clean out anything between an @ and a \n is replaced with a rule to only 
+remove header information that contains the @ symbol such as @PID, @UTF8  while tagging
+within the corpus such as uh_uh_uh@o remains as is.  
+
+Feedback:
+Information within square brackets is not speech and should be removed. 
+
+Our fix:
+Regex rule was added to remove info within square brackets such as [crying] since they
+are not part of speech
+
+Feedback:
+Removing any word that is not in the CMU dict instead of trying another preprocessing 
+step on these words is not the best solution. Is there a way to at least keep track of 
+these unknown words so that you might be able to deal with them later? Can you 
+provide some data to justify this choice to completely exclude them?
+
+Our fix:
+While searching in the dictionary, if the word is not found in CMU dict, then that word
+is still included in the output as left unmodified because a phonetic representation 
+could not be found in CMU dict. Therefore the best course of action is to leave the
+unprocessed word in the output and deal it with in a downstream process.
+
+
+** Task 2 Justification - Training n-gram Models **
+
+Start and End Tokens: To model the boundaries of utterances accurately, special tokens
+ <s> and </s> are added to the beginning and end of each sequence, respectively. This Is
+ done at the line level in the dataset because our data is structured as one utterance per line.
+ Modeling utterance boundaries is crucial for contextual prediction in bigram and
+ trigram models, making the addition of special tokens essential.
+
+OOV Handling: To account for phonetic sequences that may not appear in the training set, an <UNK> 
+ token is introduced. This token represents any unseen data during training and is vital
+ for maintaining model robustness when encountering new sequences during evaluation.
+ The <UNK> token is used to handle OOV words. This strategy was chosen for its 
+ simplicity and effectiveness, enabling the model to predict sequences that include 
+ words not seen during training.
+
+ Logarithms in Perplexity: Using logarithms prevents underflow in calculating perplexities by converting 
+ multiplication of probabilities into addition, which is more numerically stable 
+ and computationally efficient. This provides us with perplexities in the appropriate range
